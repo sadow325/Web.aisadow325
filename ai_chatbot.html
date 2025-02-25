@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot dengan Suara & Avatar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        #container {
+            width: 50%;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        #avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease;
+        }
+        #chat-box {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            text-align: left;
+            background: #fafafa;
+            border-radius: 5px;
+        }
+        input, button {
+            margin-top: 10px;
+            padding: 10px;
+            width: 70%;
+        }
+        button {
+            width: 20%;
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <img id="avatar" src="https://i.imgur.com/9I6NRUm.png" alt="AI Avatar">
+        <h2>AI Chatbot</h2>
+        <div id="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Ketik atau ucapkan sesuatu..." />
+        <button onclick="sendMessage()">Kirim</button>
+        <button onclick="startListening()">🎤 Bicara</button>
+    </div>
+
+    <script>
+        function startListening() {
+            let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "id-ID";
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                let speechToText = event.results[0][0].transcript;
+                document.getElementById("user-input").value = speechToText;
+                sendMessage();
+            };
+
+            recognition.onerror = function(event) {
+                alert("Gagal mengenali suara. Coba lagi!");
+            };
+        }
+
+        async function sendMessage() {
+            let userInput = document.getElementById("user-input").value;
+            if (!userInput) return;
+
+            let chatBox = document.getElementById("chat-box");
+            let avatar = document.getElementById("avatar");
+
+            // Tampilkan pesan pengguna
+            chatBox.innerHTML += "<p><strong>Anda:</strong> " + userInput + "</p>";
+            document.getElementById("user-input").value = "";
+
+            // Avatar bereaksi (membesar)
+            avatar.style.transform = "scale(1.1)";
+
+            // Kirim permintaan ke server backend
+            let response = await fetch("http://localhost:3000/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userInput })
+            });
+
+            let data = await response.json();
+            let aiResponse = data.reply;
+
+            // Tampilkan balasan AI
+            chatBox.innerHTML += "<p><strong>AI:</strong> " + aiResponse + "</p>";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Avatar kembali normal
+            avatar.style.transform = "scale(1)";
+
+            // AI berbicara (Text-to-Speech)
+            let speech = new SpeechSynthesisUtterance(aiResponse);
+            speech.lang = "id-ID";
+            speech.rate = 1.1;
+            speech.pitch = 1;
+            window.speechSynthesis.speak(speech);
+        }
+    </script>
+</body>
+</html>
